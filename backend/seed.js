@@ -1,88 +1,75 @@
-require("dotenv").config();
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const Student = require("./models/Student");
 const Donor = require("./models/Donor");
 const Institution = require("./models/Institution");
-const Course = require("./models/Course");
+const Course = require('./models/Course');
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const seedData = [
+  {
+    title: 'Introduction to Algebra',
+    subject: 'Mathematics',
+    duration: 30,
+    readings: [
+      { title: 'Basic Operations', content: 'Learn about addition, subtraction, multiplication, and division.' },
+      { title: 'Variables', content: 'Understanding variables in algebra.' }
+    ]
+  },
+  {
+    title: 'Basic Chemistry',
+    subject: 'Science',
+    duration: 45,
+    readings: [
+      { title: 'Atoms and Molecules', content: 'Introduction to atomic structure.' },
+      { title: 'Chemical Bonds', content: 'Understanding chemical bonding.' }
+    ]
+  },
+  {
+    title: 'World History',
+    subject: 'Social Studies',
+    duration: 40,
+    readings: [
+      { title: 'Ancient Civilizations', content: 'Study of early human civilizations.' },
+      { title: 'Middle Ages', content: 'Medieval period and its significance.' }
+    ]
+  },
+  {
+    title: 'English Literature',
+    subject: 'Language Arts',
+    duration: 35,
+    readings: [
+      { title: 'Shakespeare', content: 'Introduction to Shakespearean works.' },
+      { title: 'Poetry Analysis', content: 'Understanding poetic devices.' }
+    ]
+  }
+];
 
-const seedData = async () => {
+const seedDatabase = async () => {
   try {
-    // Clear existing data
-    await Student.deleteMany();
-    await Donor.deleteMany();
-    await Institution.deleteMany();
-    await Course.deleteMany();
+    if (!process.env.MONGODB_URI) {
+      console.log('Current directory:', __dirname);
+      console.log('Attempted env path:', path.join(__dirname, '.env'));
+      throw new Error('MONGODB_URI is not defined in environment variables');
+    }
 
-    console.log("Existing data cleared!");
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connected to MongoDB');
 
-    // Create Courses
-    const courses = await Course.insertMany([
-      { title: "Introduction to Algebra", subject: "Mathematics", duration: 30 },
-      { title: "Basic Chemistry", subject: "Science", duration: 45 },
-      { title: "World History", subject: "Social Studies", duration: 40 },
-      { title: "English Literature", subject: "Language Arts", duration: 50 },
-    ]);
+    await Course.deleteMany({});
+    console.log('Cleared existing courses');
 
-    console.log("Courses seeded!");
-
-    // Create Students
-    const students = await Student.insertMany([
-      {
-        name: "John Doe",
-        email: "john.doe@example.com",
-        phone: "1234567890",
-        courses: [courses[0]._id, courses[1]._id],
-        progress: { completedLessons: 5, totalLessons: 10 },
-      },
-      {
-        name: "Jane Smith",
-        email: "jane.smith@example.com",
-        phone: "9876543210",
-        courses: [courses[2]._id, courses[3]._id],
-        progress: { completedLessons: 3, totalLessons: 8 },
-      },
-    ]);
-
-    console.log("Students seeded!");
-
-    // Create Donors
-    const donors = await Donor.insertMany([
-      { name: "Alice Brown", email: "alice@example.com", phone: "5551234567", donationAmount: 500 },
-      { name: "Bob Green", email: "bob@example.com", phone: "5559876543", donationAmount: 1000 },
-    ]);
-
-    console.log("Donors seeded!");
-
-    // Create Institutions
-    const institutions = await Institution.insertMany([
-      {
-        name: "Sunshine Academy",
-        location: "123 Sunshine Lane",
-        country: "USA",
-        contactEmail: "contact@sunshineacademy.com",
-      },
-      {
-        name: "Greenfield Institute",
-        location: "456 Greenfield Road",
-        country: "Canada",
-        contactEmail: "info@greenfieldinstitute.ca",
-      },
-    ]);
-
-    console.log("Institutions seeded!");
-
-    console.log("Database seeding completed!");
-    process.exit();
+    const result = await Course.insertMany(seedData);
+    console.log(`Seeded ${result.length} courses successfully`);
   } catch (error) {
-    console.error("Error seeding database:", error);
-    process.exit(1);
+    console.error('Error seeding database:', error);
+    process.exit(1); // Exit with error code
+  } finally {
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.close();
+      console.log('MongoDB connection closed');
+    }
   }
 };
 
-seedData();
+seedDatabase();

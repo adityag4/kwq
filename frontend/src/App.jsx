@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import UserSelection from "./pages/UserSelection";
@@ -7,12 +7,14 @@ import StudentOnboarding from './pages/StudentOnboarding';
 import Dashboard from "./pages/Dashboard";
 import Progress from "./pages/Progress";
 import CourseProgress from './pages/CourseProgress';
+import Login from './pages/Login';
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <AuthProvider>
         <Routes>
+          <Route path="/login" element={<Login />} />
           <Route path="/" element={<UserSelection />} />
           <Route path="/onboarding" element={
             <PrivateRoute>
@@ -29,15 +31,15 @@ function App() {
               <Progress />
             </PrivateRoute>
           } />
-          <Route path="/dashboard/course/:courseId" element={
+          <Route path="/course/:courseId" element={
             <PrivateRoute>
               <CourseProgress />
             </PrivateRoute>
           } />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </AuthProvider>
-    </BrowserRouter>
+    </Router>
   );
 }
 

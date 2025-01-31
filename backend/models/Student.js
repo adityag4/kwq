@@ -10,10 +10,19 @@ const studentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  name: String,
-  nickname: String,
-  photoURL: String,
-  phone: String,
+  name: {
+    type: String,
+    required: true
+  },
+  nickname: {
+    type: String
+  },
+  phone: {
+    type: String
+  },
+  photoURL: {
+    type: String
+  },
   language: String,
   courses: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -23,7 +32,18 @@ const studentSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  lastLogin: Date
+  lastLogin: {
+    type: Date,
+    default: Date.now
+  },
+  courseProgress: {
+    type: Map,
+    of: {
+      completedReadings: [String],
+      progress: Number
+    },
+    default: new Map()
+  }
 });
 
 module.exports = mongoose.model('Student', studentSchema);

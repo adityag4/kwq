@@ -135,4 +135,26 @@ router.post('/update-nickname/:uid', async (req, res) => {
   }
 });
 
+router.post('/complete-onboarding/:uid', async (req, res) => {
+  try {
+    const { nickname, phone, selectedCourses } = req.body;
+    const student = await Student.findOne({ uid: req.params.uid });
+    
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    
+    student.nickname = nickname;
+    student.phone = phone;
+    student.courses = selectedCourses;
+    student.firstLogin = false;
+    
+    await student.save();
+    res.json(student);
+  } catch (error) {
+    console.error('Error completing onboarding:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
