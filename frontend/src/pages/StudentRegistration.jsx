@@ -21,7 +21,7 @@ const StudentRegistration = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/courses");
+        const response = await axios.get("http://localhost:5001/api/courses");
         setCourses(response.data);
         setLoading(false);
       } catch (error) {
@@ -51,7 +51,7 @@ const StudentRegistration = () => {
           validationSchema={StudentSchema}
           onSubmit={async (values) => {
             try {
-              const response = await axios.post("http://localhost:5000/api/students", values);
+              const response = await axios.post("http://localhost:5001/api/students", values);
               console.log("Student registered:", response.data);
               navigate("/dashboard");
             } catch (error) {

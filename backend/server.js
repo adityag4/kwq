@@ -1,31 +1,24 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const connectDB = require("./config/db");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const studentRoutes = require('./routes/studentRoutes');
+const courseRoutes = require('./routes/courseRoutes');
 
-// Load environment variables
-dotenv.config();
+const app = express();
 
 // Connect to MongoDB
 connectDB();
 
-const app = express();
-
 // Middleware
 app.use(cors());
-app.use(express.json()); // For parsing JSON request bodies
+app.use(express.json());
 
 // Routes
-app.use("/api/students", require("./routes/studentRoutes"));
-app.use("/api/courses", require("./routes/courseRoutes"));
-app.use("/api/donors", require("./routes/donorRoutes"));
-app.use("/api/institutions", require("./routes/institutionRoutes"));
+app.use('/api/students', studentRoutes);
+app.use('/api/courses', courseRoutes);
 
-// Default Route
-app.get("/", (req, res) => {
-  res.send("API is running...");
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

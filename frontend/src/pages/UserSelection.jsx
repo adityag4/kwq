@@ -1,8 +1,19 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const UserSelection = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const handleStudentClick = () => {
+    // Simulate a login for now
+    login({
+      uid: 'test-uid',
+      email: 'test@example.com',
+      name: 'Test User'
+    });
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -13,7 +24,7 @@ const UserSelection = () => {
         </div>
         <div className="space-y-4">
           <button
-            onClick={() => navigate('/register/student')}
+            onClick={handleStudentClick}
             className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             I'm a Student
