@@ -167,4 +167,99 @@ router.post('/:courseId/lessons/:lessonId/complete', async (req, res) => {
   }
 });
 
+// Update lesson content
+router.put('/:courseId/lessons/:lessonId/content', async (req, res) => {
+  try {
+    const { courseId, lessonId } = req.params;
+    const { content } = req.body;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    const lesson = course.lessons.id(lessonId);
+    if (!lesson) {
+      return res.status(404).json({ message: 'Lesson not found' });
+    }
+
+    lesson.content = content;
+    await course.save();
+
+    res.json({ message: 'Lesson content updated successfully' });
+  } catch (error) {
+    console.error('Error updating lesson content:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get a single course
+router.get('/:courseId', async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const course = await Course.findById(courseId);
+    
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    res.json(course);
+  } catch (error) {
+    console.error('Error fetching course:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get a single reading
+router.get('/:courseId/readings/:readingId', async (req, res) => {
+  try {
+    const { courseId, readingId } = req.params;
+    console.log('Fetching reading:', { courseId, readingId });
+    
+    const course = await Course.findById(courseId);
+    if (!course) {
+      console.log('Course not found:', courseId);
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    const reading = course.readings.id(readingId);
+    if (!reading) {
+      console.log('Reading not found:', readingId);
+      return res.status(404).json({ message: 'Reading not found' });
+    }
+
+    console.log('Found reading:', reading);
+    res.json(reading);
+  } catch (error) {
+    console.error('Error fetching reading:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Save reading content
+router.put('/:courseId/readings/:readingId/content', async (req, res) => {
+  try {
+    const { courseId, readingId } = req.params;
+    const { content } = req.body;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    const reading = course.readings.id(readingId);
+    if (!reading) {
+      return res.status(404).json({ message: 'Reading not found' });
+    }
+
+    reading.content = content;
+    await course.save();
+
+    res.json({ message: 'Content saved successfully' });
+  } catch (error) {
+    console.error('Error saving content:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

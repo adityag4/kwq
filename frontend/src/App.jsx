@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Progress from "./pages/Progress";
 import CourseProgress from './pages/CourseProgress';
 import Login from './pages/Login';
+import ReadingView from './pages/ReadingView';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
               <CourseProgress />
             </PrivateRoute>
           } />
+          <Route path="/course/:courseId/reading/:readingId" element={<ReadingView />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </AuthProvider>

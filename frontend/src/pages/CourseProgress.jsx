@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const CourseProgress = () => {
@@ -97,21 +97,29 @@ const CourseProgress = () => {
       </div>
 
       <div className="space-y-4">
+        <h2 className="text-2xl font-bold mb-4">Readings</h2>
         {courseData.readings.map(reading => (
           <div key={reading._id} className="bg-white p-6 rounded-lg shadow-lg">
             <h3 className="text-xl font-semibold mb-2">{reading.title}</h3>
-            <p className="text-gray-600 mb-4">{reading.content}</p>
-            <button
-              onClick={() => markAsRead(reading._id)}
-              disabled={reading.completed}
-              className={`px-4 py-2 rounded-md ${
-                reading.completed 
-                  ? 'bg-green-500 text-white cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              {reading.completed ? 'Completed ✓' : 'Mark as Complete'}
-            </button>
+            <div className="flex gap-4">
+              <Link
+                to={`/course/${courseId}/reading/${reading._id}`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                View Content
+              </Link>
+              <button
+                onClick={() => markAsRead(reading._id)}
+                disabled={reading.completed}
+                className={`px-4 py-2 rounded-md ${
+                  reading.completed 
+                    ? 'bg-green-500 text-white cursor-not-allowed'
+                    : 'bg-gray-600 text-white hover:bg-gray-700'
+                }`}
+              >
+                {reading.completed ? 'Completed ✓' : 'Mark as Complete'}
+              </button>
+            </div>
           </div>
         ))}
       </div>

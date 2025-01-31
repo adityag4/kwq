@@ -12,7 +12,8 @@ const readingSchema = new mongoose.Schema({
 
 const lessonSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  content: { type: String, required: true },
+  subject: { type: String, required: true },
+  content: String,
   duration: { type: Number, required: true },
   completed: {
     type: Map,
