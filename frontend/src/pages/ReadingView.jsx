@@ -8,39 +8,26 @@ const ReadingView = () => {
   const [reading, setReading] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [generatedContent, setGeneratedContent] = useState(null);
 
   useEffect(() => {
     const fetchReading = async () => {
       try {
-        console.log('Fetching course:', courseId);
-        const courseResponse = await fetch(`http://localhost:5001/api/courses/${courseId}`);
-        if (!courseResponse.ok) {
-          const errorData = await courseResponse.json();
-          throw new Error(errorData.message || 'Failed to fetch course');
-        }
-        const courseData = await courseResponse.json();
-        console.log('Course data:', courseData);
-
-        console.log('Fetching reading:', readingId);
-        const readingResponse = await fetch(`http://localhost:5001/api/courses/${courseId}/readings/${readingId}`);
-        if (!readingResponse.ok) {
-          const errorData = await readingResponse.json();
+        setLoading(true);
+        const response = await fetch(`http://localhost:5001/api/courses/${courseId}/readings/${readingId}`);
+        if (!response.ok) {
+          const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to fetch reading');
         }
-        const readingData = await readingResponse.json();
-        console.log('Reading data:', readingData);
-        setReading(readingData);
+        const data = await response.json();
         
-        if (!readingData.content) {
-          console.log('No content found, generating...');
-          await generateContent(readingData.title, courseData.title);
+        if (!data.content) {
+          // Generate content if it doesn't exist
+          await generateAndSaveContent(data.title, data.courseName);
         } else {
-          console.log('Using existing content');
-          setGeneratedContent(readingData.content);
+          setReading(data);
         }
       } catch (error) {
-        console.error('Error in fetchReading:', error);
+        console.error('Error:', error);
         setError(error.message);
       } finally {
         setLoading(false);
@@ -50,40 +37,42 @@ const ReadingView = () => {
     fetchReading();
   }, [courseId, readingId]);
 
-  const generateContent = async (title, courseName) => {
+  const generateAndSaveContent = async (title, courseName) => {
     try {
-      console.log('Generating content for:', { title, courseName });
-      const response = await fetch('http://localhost:5001/api/readings/generate', {
+      const generateResponse = await fetch('http://localhost:5001/api/readings/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, courseName })
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Generation error:', errorData);
+
+      if (!generateResponse.ok) {
+        const errorData = await generateResponse.json();
         throw new Error(errorData.error || 'Failed to generate content');
       }
-      const data = await response.json();
-      console.log('Generated content (raw):', data.content);
-      setGeneratedContent(data.content);
-      
-      await saveGeneratedContent(data.content);
-    } catch (error) {
-      console.error('Error in generateContent:', error);
-      setError('Failed to generate content');
-    }
-  };
 
-  const saveGeneratedContent = async (content) => {
-    try {
-      await fetch(`http://localhost:5001/api/courses/${courseId}/readings/${readingId}/content`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
-      });
+      const { content } = await generateResponse.json();
+
+      // Save the generated content
+      const saveResponse = await fetch(
+        `http://localhost:5001/api/courses/${courseId}/readings/${readingId}/content`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content })
+        }
+      );
+
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save content');
+      }
+
+      // Fetch the updated reading
+      const updatedResponse = await fetch(`http://localhost:5001/api/courses/${courseId}/readings/${readingId}`);
+      const updatedData = await updatedResponse.json();
+      setReading(updatedData);
     } catch (error) {
-      console.error('Error saving content:', error);
+      console.error('Error generating/saving content:', error);
+      setError(error.message);
     }
   };
 
@@ -97,7 +86,6 @@ const ReadingView = () => {
           body: JSON.stringify({ userId: user.uid })
         }
       );
-
       if (!response.ok) throw new Error('Failed to mark reading as complete');
     } catch (error) {
       setError(error.message);
@@ -113,25 +101,25 @@ const ReadingView = () => {
       <h1 className="text-3xl font-bold mb-6">{reading.title}</h1>
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="prose prose-lg max-w-none">
-          {generatedContent ? (
+          {reading.content ? (
             <div 
-              dangerouslySetInnerHTML={{ __html: generatedContent }} 
+              dangerouslySetInnerHTML={{ __html: reading.content }} 
               className="space-y-6 prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-p:text-gray-600 prose-ul:list-disc prose-ul:pl-5"
             />
           ) : (
-            <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
               <div className="h-4 bg-gray-200 rounded w-5/6"></div>
             </div>
           )}
+          <button
+            onClick={markAsComplete}
+            className="mt-8 px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+          >
+            Mark as Complete
+          </button>
         </div>
-        <button
-          onClick={() => markAsComplete()}
-          className="mt-8 px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-        >
-          Mark as Complete
-        </button>
       </div>
     </div>
   );
