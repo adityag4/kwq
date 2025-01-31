@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Book } from "lucide-react";
 import Header from "./Header";
 import { useAuth } from "../contexts/AuthContext";
 
 const StudentDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [studentData, setStudentData] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [progressData, setProgressData] = useState({
     completedLessons: 0,
-    totalLessons: 0
+    totalLessons: 0,
+    studyTime: 0,
+    downloadedContent: 0
   });
 
   useEffect(() => {
@@ -25,17 +28,43 @@ const StudentDashboard = () => {
       try {
         setLoading(true);
         setError(null);
-
-        // Fetch enrolled courses
-        if (user.courses && user.courses.length > 0) {
-          const coursesResponse = await fetch(`http://localhost:5001/api/courses?ids=${user.courses.join(',')}`);
-          if (coursesResponse.ok) {
-            const coursesData = await coursesResponse.json();
-            setCourses(coursesData);
-          }
+        
+        // Fetch student profile with courses and readings
+        const studentResponse = await fetch(`http://localhost:5001/api/students/profile/${user.uid}`);
+        if (!studentResponse.ok) {
+          throw new Error('Failed to fetch student profile');
         }
         
-        setStudentData(user);
+        const studentData = await studentResponse.json();
+        setStudentData(studentData);
+
+        if (studentData.courses && studentData.courses.length > 0) {
+          // Transform the courses data to include readings and progress
+          const coursesWithProgress = studentData.courses.map(course => ({
+            _id: course._id,
+            title: course.title,
+            subject: course.subject,
+            duration: course.duration,
+            readings: course.readings || [],
+            progress: (course.readings?.filter(r => r.completed)?.length || 0) / 
+                     (course.readings?.length || 1) * 100
+          }));
+
+          setCourses(coursesWithProgress);
+
+          // Calculate overall progress
+          const totalReadings = coursesWithProgress.reduce((sum, course) => 
+            sum + (course.readings?.length || 0), 0);
+          const completedReadings = coursesWithProgress.reduce((sum, course) => 
+            sum + (course.readings?.filter(r => r.completed)?.length || 0), 0);
+
+          setProgressData({
+            completedLessons: completedReadings,
+            totalLessons: totalReadings || 1,
+            studyTime: Math.round(completedReadings * 0.5),
+            downloadedContent: completedReadings
+          });
+        }
       } catch (error) {
         console.error('Error:', error);
         setError(error.message);
@@ -45,7 +74,7 @@ const StudentDashboard = () => {
     };
 
     fetchData();
-  }, [user]);
+  }, [user, navigate]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -82,7 +111,7 @@ const StudentDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {courses.map(course => (
             <Link 
-              key={course._id} 
+              key={course._id || `course-${course.title}`}
               to={`/dashboard/course/${course._id}`}
               className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg"
             >

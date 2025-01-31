@@ -8,7 +8,18 @@ const CourseSelection = () => {
   const [selectedCourses, setSelectedCourses] = useState([]);
 
   const availableCourses = [
-    { id: 1, title: 'Introduction to Algebra', subject: 'Mathematics', duration: '30' },
+    { 
+      _id: "679ce280b9bc666f6a6e5a25", 
+      title: 'Introduction to Algebra', 
+      subject: 'Mathematics', 
+      duration: '30',
+      readings: [
+        { _id: "read1", title: "Basic Algebra Concepts", content: "Introduction to basic algebra", completed: false },
+        { _id: "read2", title: "Linear Equations", content: "Understanding linear equations", completed: false },
+        { _id: "read3", title: "Quadratic Equations", content: "Basics of quadratic equations", completed: false },
+        { _id: "read4", title: "Algebraic Expressions", content: "Working with expressions", completed: false }
+      ]
+    },
     { id: 2, title: 'Basic Chemistry', subject: 'Science', duration: '45' },
     { id: 3, title: 'World History', subject: 'Social Studies', duration: '40' },
     { id: 4, title: 'English Literature', subject: 'Language Arts', duration: '35' }
@@ -30,7 +41,15 @@ const CourseSelection = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ courses: selectedCourses }),
+        body: JSON.stringify({ 
+          courses: selectedCourses.map(id => id.toString()),
+          readings: availableCourses.reduce((acc, course) => {
+            if (selectedCourses.includes(course._id)) {
+              acc[course._id] = course.readings;
+            }
+            return acc;
+          }, {})
+        }),
       });
 
       if (response.ok) {
@@ -51,13 +70,13 @@ const CourseSelection = () => {
           <div className="space-y-4">
             {availableCourses.map((course) => (
               <div 
-                key={course.id}
+                key={course._id || course.id}
                 className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  selectedCourses.includes(course.id)
+                  selectedCourses.includes(course._id || course.id)
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300'
                 }`}
-                onClick={() => handleCourseToggle(course.id)}
+                onClick={() => handleCourseToggle(course._id || course.id)}
               >
                 <h3 className="font-semibold">{course.title}</h3>
                 <p className="text-sm text-gray-600">{course.subject} | {course.duration} min</p>
