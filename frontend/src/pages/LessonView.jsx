@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { generateLessonContent } from '../utils/gptHelper';
+import DOMPurify from 'dompurify';
+import marked from 'marked';
 
 const LessonView = () => {
   const { courseId, lessonId } = useParams();
@@ -8,21 +11,34 @@ const LessonView = () => {
   const [lesson, setLesson] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [generatedContent, setGeneratedContent] = useState(null);
+  const [generatedContent, setGeneratedContent] = useState('');
 
   useEffect(() => {
     const fetchLesson = async () => {
       try {
+        setLoading(true);
         const response = await fetch(`http://localhost:5001/api/courses/${courseId}/lessons/${lessonId}`);
         if (!response.ok) throw new Error('Failed to fetch lesson');
         const data = await response.json();
         setLesson(data);
         
-        // Generate content if not already present
-        if (!data.content) {
-          await generateLessonContent(data.title, data.subject);
+        // Generate content if not already cached
+        if (!data.generatedContent) {
+          const content = await generateLessonContent(data);
+          if (content) {
+            // Convert markdown to HTML and sanitize
+            const htmlContent = DOMPurify.sanitize(marked(content));
+            setGeneratedContent(htmlContent);
+            
+            // Cache the generated content
+            await fetch(`http://localhost:5001/api/lessons/${lessonId}/content`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: htmlContent })
+            });
+          }
         } else {
-          setGeneratedContent(data.content);
+          setGeneratedContent(data.generatedContent);
         }
       } catch (error) {
         setError(error.message);
@@ -33,60 +49,6 @@ const LessonView = () => {
 
     fetchLesson();
   }, [courseId, lessonId]);
-
-  const generateLessonContent = async (title, subject) => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5001/api/lessons/generate', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer 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`
-        },
-        body: JSON.stringify({ 
-          title, 
-          subject,
-          model: "gpt-3.5-turbo",
-          store: true
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate content');
-      }
-
-      const data = await response.json();
-      setGeneratedContent(data.content);
-      
-      // Save the generated content
-      await saveGeneratedContent(data.content);
-    } catch (error) {
-      setError('Failed to generate lesson content: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveGeneratedContent = async (content) => {
-    try {
-      const response = await fetch(
-        `http://localhost:5001/api/courses/${courseId}/lessons/${lessonId}/content`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content })
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to save generated content');
-      }
-    } catch (error) {
-      console.error('Error saving content:', error);
-      // Don't set error state here as we already have the content
-    }
-  };
 
   const markAsComplete = async () => {
     try {
@@ -105,9 +67,16 @@ const LessonView = () => {
     }
   };
 
-  if (loading) return <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>;
-  if (error) return <div className="text-red-600">Error: {error}</div>;
-  if (!lesson) return <div>No lesson found</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) return <div className="p-8 text-red-600">Error: {error}</div>;
+  if (!lesson) return <div className="p-8">No lesson found</div>;
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -117,19 +86,26 @@ const LessonView = () => {
           {generatedContent ? (
             <div dangerouslySetInnerHTML={{ __html: generatedContent }} />
           ) : (
-            <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
               <div className="h-4 bg-gray-200 rounded w-5/6"></div>
             </div>
           )}
         </div>
-        <button
-          onClick={markAsComplete}
-          className="mt-8 px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-        >
-          Mark as Complete
-        </button>
+        <div className="mt-8 flex justify-between items-center">
+          <button
+            onClick={markAsComplete}
+            className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 
+            transition-colors disabled:opacity-50"
+            disabled={lesson.completed}
+          >
+            {lesson.completed ? 'Completed ✓' : 'Mark as Complete'}
+          </button>
+          <span className="text-gray-500">
+            <span className="font-medium">{lesson.duration}</span> minutes
+          </span>
+        </div>
       </div>
     </div>
   );

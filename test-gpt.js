@@ -1,7 +1,7 @@
 const OpenAI = require('openai');
 
 const openai = new OpenAI({
-  apiKey: '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',
+  apiKey: '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',
   baseURL: 'https://api.openai.com/v1'
 });
 
