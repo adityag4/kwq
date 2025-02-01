@@ -4,7 +4,7 @@ LearnBridge is an interactive educational platform that combines course manageme
 
 ## Prerequisites
 
-- Node.js (v14 or higher) - From nodejs.org/en/downloads/current
+- Node.js (v14 or higher) - From https://nodejs.org/en/downloads/current
 - MongoDB
 - Python 3.8 or higher
 - pip (Python package manager)
