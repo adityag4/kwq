@@ -9,7 +9,7 @@ from datetime import datetime
 
 # User credentials
 TELEGRAM_BOT_TOKEN = "7975477552:AAFlWPLpezHxx674jZGp1U_-m9yEhu2Kwww"
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 MONGO_URI = "mongodb+srv://sunayau:passwordforhackathon@cluster0.b9sz7.mongodb.net/?retryWrites=true&w=majority&ssl=true"
 
 # Connect to MongoDB
@@ -91,6 +91,35 @@ def check_credentials(phone):
 # Start command
 async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text("Welcome! Please log in or register.\nUse /login <Offline Access Token> or /register <email> <Offline Access Token> to authenticate.")
+
+# Register command
+async def register(update: Update, context: CallbackContext) -> None:
+    if len(context.args) != 2:
+        await update.message.reply_text("Usage: /register <email> <Offline Access Token>")
+        return
+
+    email = context.args[0].strip()
+    offline_access_token = context.args[1].strip()
+
+    # Validate email
+    try:
+        validate_email(email, check_deliverability=False)
+    except EmailNotValidError:
+        await update.message.reply_text("Invalid email format. Please enter a valid email.")
+        return
+
+    # Store user in MongoDB
+    existing_user = users_collection.find_one({"phone": offline_access_token})
+    if existing_user:
+        await update.message.reply_text("This Offline Access Token is already registered.")
+        return
+
+    users_collection.insert_one({"email": email, "phone": offline_access_token, "courses": []})
+    
+    await update.message.reply_text("Registration successful! Restarting...")
+    
+    # Restart the bot from the welcome message
+    await start(update, context)
 
 # Login command
 async def login(update: Update, context: CallbackContext) -> None:
@@ -279,6 +308,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("login", login))
+    app.add_handler(CommandHandler("register", register))
     app.add_handler(CommandHandler("courses", return_to_courses))  # Add new command handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 

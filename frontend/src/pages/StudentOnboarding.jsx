@@ -11,7 +11,7 @@ const StudentOnboarding = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nickname: '',
-    phone: user.accessToken || '',
+    phone: '',
     selectedCourses: []
   });
 
@@ -35,35 +35,32 @@ const StudentOnboarding = () => {
 
   const validateStep1 = async () => {
     const newErrors = {};
-    if (user.accessToken) {
-      if (!formData.nickname.trim()) {
-        newErrors.nickname = 'Nickname is required';
-      }
+    
+    if (!formData.nickname.trim()) {
+      newErrors.nickname = 'Nickname is required';
+    }
+    
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Offline access token is required';
+    } else if (!/^\d{10}$/.test(formData.phone.trim())) {
+      newErrors.phone = 'Please enter a valid 10-digit access token';
     } else {
-      if (!formData.phone.trim()) {
-        newErrors.phone = 'Offline access token is required';
-      } else if (!/^\d{10}$/.test(formData.phone.trim())) {
-        newErrors.phone = 'Please enter a valid 10-digit access token';
-      } else {
-        try {
-          const response = await fetch('http://localhost:5001/api/students/check-token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: formData.phone }),
-          });
-          
-          if (!response.ok) {
-            const data = await response.json();
-            newErrors.phone = data.error || 'This access token is already in use';
-          }
-        } catch (error) {
-          newErrors.phone = 'Error validating access token';
+      try {
+        const response = await fetch('http://localhost:5001/api/students/check-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: formData.phone }),
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          newErrors.phone = data.error || 'This access token is already in use';
         }
-      }
-      if (!formData.nickname.trim()) {
-        newErrors.nickname = 'Nickname is required';
+      } catch (error) {
+        newErrors.phone = 'Error validating access token';
       }
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -154,31 +151,30 @@ const StudentOnboarding = () => {
                 )}
               </div>
 
-              {!user.accessToken && (
-                <div className="transform transition-all">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Offline Access Token</label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => {
-                      setFormData(prev => ({ ...prev, phone: e.target.value }));
-                      setErrors(prev => ({ ...prev, phone: '' }));
-                    }}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 
-                    focus:border-blue-500 transition-all"
-                    placeholder="Enter your 10-digit access token"
-                  />
-                  {errors.phone && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center">
-                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {errors.phone}
-                    </p>
-                  )}
-                  <p className="mt-1 text-sm text-gray-500">This token will be used for offline access to the platform</p>
-                </div>
-              )}
+              <div className="transform transition-all">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Offline Access Token</label>
+                <input
+                  type="text"
+                  value={formData.phone}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, phone: e.target.value }));
+                    setErrors(prev => ({ ...prev, phone: '' }));
+                  }}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 
+                  focus:border-blue-500 transition-all"
+                  placeholder="Enter your 10-digit access token"
+                  required
+                />
+                {errors.phone && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.phone}
+                  </p>
+                )}
+                <p className="mt-1 text-sm text-gray-500">This token will be used for offline access to the platform</p>
+              </div>
 
               <button
                 onClick={handleNextStep}
