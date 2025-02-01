@@ -21,7 +21,6 @@ cd learnbridge
 
 ### 2. Backend Setup
 
-#### Python Telegram Bot
 
 ```bash
 cd backend
