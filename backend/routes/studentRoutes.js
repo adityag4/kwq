@@ -157,4 +157,66 @@ router.post('/complete-onboarding/:uid', async (req, res) => {
   }
 });
 
+router.post('/check-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+    const existingStudent = await Student.findOne({ phone: token });
+    
+    if (existingStudent) {
+      return res.status(400).json({ 
+        error: 'This access token is already in use. Please choose a different one.' 
+      });
+    }
+    
+    res.status(200).json({ available: true });
+  } catch (error) {
+    console.error('Error checking access token:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/auth-token', async (req, res) => {
+  try {
+    const { email, token } = req.body;
+    
+    const student = await Student.findOne({ 
+      email: email.toLowerCase(),
+      phone: token 
+    });
+    
+    if (!student) {
+      return res.status(401).json({ 
+        error: 'Invalid email or access token' 
+      });
+    }
+
+    // Create a temporary uid if not present
+    if (!student.uid) {
+      student.uid = student._id.toString();
+    }
+
+    // Set a default name if not present
+    if (!student.name) {
+      student.name = email.split('@')[0];
+    }
+    
+    student.lastLogin = new Date();
+    await student.save();
+    
+    res.status(200).json({ 
+      student: {
+        uid: student.uid,
+        email: student.email,
+        name: student.name,
+        photoURL: student.photoURL || null,
+        firstLogin: student.firstLogin
+      }, 
+      isFirstLogin: student.firstLogin 
+    });
+  } catch (error) {
+    console.error('Error in token auth:', error);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+});
+
 module.exports = router;
