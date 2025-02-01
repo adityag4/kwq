@@ -1,6 +1,6 @@
 # LearnBridge - Educational Platform
 
-LearnBridge is an interactive educational platform that combines course management, quizzes, and AI-powered learning assistance.
+LearnBridge is an interactive educational platform that combines course management, quizzes, and AI-powered learning assistance, especially targeted towards making education accessible for displaced children.
 
 ## Prerequisites
 
